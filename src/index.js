@@ -16,7 +16,8 @@ class AtHome {
     this.log = log
     this.log('Initialized', this.id)
   }
-  connect({ target, protocol = 'ws', id = uuid() }) {
+  connect({ target, protocol = 'ws' }) {
+    const id = this.id
     let inbound = new Inbound({ target, protocol, id, log: this.log }, {})
     this.inbounds[id] = inbound
     this.log('Inbound Initialized', protocol, target, id)
