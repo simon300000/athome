@@ -1,6 +1,6 @@
 /* global describe context it */
 import { assert } from 'chai'
-const AtHome = require('..')
+const AtHome = require('../index.ts')
 
 describe('@Home', function() {
   context('Class AtHome', function() {

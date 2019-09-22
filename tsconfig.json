@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,
     "declaration": true
   },
   "include": [
-        "./src/**/*"
+        "./src/**/*",
+        "./test/*.ts"
     ],
   "files": [
     "./index.ts"

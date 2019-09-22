@@ -16,8 +16,7 @@
   },
   "nyc": {
     "include": [
-      "src/**/*.ts",
-      "index.ts"
+      "**/*.ts"
     ],
     "extension": [
       ".ts"
