@@ -1,1 +1,2 @@
-module.exports = require('./src/index.ts')
+import AtHome from './src'
+export = AtHome

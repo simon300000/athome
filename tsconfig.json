@@ -1,15 +1,18 @@
 {
   "compilerOptions": {
+    "target": "es2018",
+    "lib": ["es2018"],
     "module": "commonjs",
     "noImplicitAny": true,
-    "removeComments": true,
-    "preserveConstEnums": true,
-    "declaration": true
+    "declaration": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    // "strict": true
   },
   "include": [
-        "./src/**/*",
-        "./test/*.ts"
-    ],
+    "./src/**/*.ts",
+    "./test/**/*.ts"
+  ],
   "files": [
     "./index.ts"
   ],
