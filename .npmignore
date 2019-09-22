@@ -1,0 +1,5 @@
+**/*.ts
+!**/*.d.ts
+.nyc_output
+demo.js
+.github
