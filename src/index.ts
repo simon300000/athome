@@ -106,6 +106,9 @@ export = class AtHome {
   }
   private async transmit(id: string, job: Job) {
     const home = this.homes.get(id)
+    if (!home) {
+      throw new Error('unknow home')
+    }
     home.jobs.add(job)
     const result = await home.processer(job.task.data)
     //   this.nodes.set(id, { ...node, time: Date.now() })
@@ -164,8 +167,7 @@ export = class AtHome {
       } else {
         this.pulls.push(pull)
       }
-      pull.promise.then(task => this.dispatch(pull.id, task))
-      return pull.promise
+      return pull.promise.then(task => this.dispatch(pull.id, task))
     } else {
       return Promise.reject(new Error('unknow node'))
     }

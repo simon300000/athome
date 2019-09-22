@@ -72,7 +72,7 @@ describe('@Home', function () {
         const result = home.execute(undefined).catch((e: Error) => e)
         for (let index = 0; index < 6; index++) {
           id = home.join(() => new Promise(() => { }))
-          home.pull(id)
+          home.pull(id).catch(() => { })
           home.quit(id)
           await wait(1)
         }
