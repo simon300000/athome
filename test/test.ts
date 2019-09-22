@@ -1,8 +1,6 @@
 /* global describe context it */
+import { assert } from 'chai'
 const AtHome = require('..')
-
-const chai = require('chai')
-const assert = chai.assert
 
 describe('@Home', function() {
   context('Class AtHome', function() {
@@ -48,27 +46,32 @@ describe('@Home', function() {
         home.join(() => 233)
         return assert.strictEqual(home.nodes.size, 1)
       })
-      it('busy', function() {
-        const home = new AtHome()
-        home.join(() => 233)
-        return assert.strictEqual(home.busy.length, 1)
-      })
-      it('busy with power', function() {
-        const home = new AtHome()
-        home.join(() => 233, { power: 20 })
-        return assert.strictEqual(home.busy.length, 20)
-      })
+      // it('busy', function() {
+      //   const home = new AtHome()
+      //   home.join(() => 233)
+      //   return assert.strictEqual(home.busy.length, 1)
+      // })
+      // it('busy with power', function() {
+      //   const home = new AtHome()
+      //   home.join(() => 233, { power: 20 })
+      //   return assert.strictEqual(home.busy.length, 20)
+      // })
     })
     context('quit', function() {
-
+      it('quit', function() {
+        const home = new AtHome()
+        const id = home.join(() => 233)
+        home.quit(id)
+        return assert.equal(home.nodes.size, 0)
+      })
     })
   })
-  context('Action', function() {
-    it('compute', async function() {
-      let number = 42
-      const home = new AtHome()
-      home.join(n => n + 1)
-      return assert.strictEqual(await home.action(number), number + 1)
-    })
-  })
+  // context('Action', function() {
+  // it('compute', async function() {
+  //   let number = 42
+  //   const home = new AtHome()
+  //   home.join(n => n + 1)
+  //   return assert.strictEqual(await home.action(number), number + 1)
+  // })
+  // })
 })
