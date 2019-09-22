@@ -1,4 +1,7 @@
 demo.js
+src/*.js
+index.js
+**/*.d.ts
 
 # Logs
 logs
