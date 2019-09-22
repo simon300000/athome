@@ -1,10 +1,12 @@
 {
   "name": "athome",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Task Distribution",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run unit",
+    "unit": "nyc mocha --reporter=landing",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
@@ -22,16 +24,16 @@
   },
   "homepage": "https://github.com/simon300000/athome#readme",
   "devDependencies": {
+    "chai": "^4.2.0",
+    "coveralls": "^3.0.6",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.17.2",
     "eslint-plugin-node": "^9.0.1",
     "eslint-plugin-promise": "^4.1.1",
-    "eslint-plugin-standard": "^4.0.0"
+    "eslint-plugin-standard": "^4.0.0",
+    "mocha": "^6.2.0",
+    "nyc": "^14.1.1"
   },
-  "dependencies": {
-    "socket.io": "^2.2.0",
-    "socket.io-client": "^2.2.0",
-    "uuid": "^3.3.2"
-  }
+  "dependencies": {}
 }

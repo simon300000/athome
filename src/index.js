@@ -1,173 +1,67 @@
 const uuid = require('uuid/v4')
-const { once } = require('events')
-
-const Client = require('socket.io-client')
-const Server = require('socket.io')
+const { pdf } = require('./math')
 
 class AtHome {
-  constructor({ id = uuid(), log = () => {} } = {}) {
+  constructor({ id = uuid(), validator = () => true } = {}) {
     this.id = id
-    this.ability = {}
-    this.processers = {}
-    this.ports = {}
-    this.inbounds = {}
-    this.outbounds = {}
-    this.log = log
-    this.log('Initialized', this.id)
+    this.nodes = new Map()
+    this.busy = []
+    this.power = 0
+    this.validator = validator
   }
-  connect({ target, protocol = 'ws', id = uuid() }) {
-    let inbound = new Inbound({ target, protocol, id, log: this.log }, this)
-    this.inbounds[id] = inbound
-    this.log('Inbound Initialized', protocol, target, id)
+  join(processer, { id = uuid(), power = 1 } = {}) {
+    this.nodes.set(id, { id, processer, resolve: 0, reject: 0, power, time: Date.now() })
+    this.busy.push(...Array(power).fill(id))
+    this.power += power
+    return id
   }
-  open({ target, protocol = 'ws', id = uuid() }) {
-    let port = new Port({ target, protocol, id, log: this.log }, this)
-    this.ports[id] = port
-    this.log('Port Open', protocol, target, id)
+  quit(id) {
+    const { power } = this.nodes.get(id)
+    this.busy = this.busy.filter(node => node !== id)
+    this.power -= power
+    this.nodes.delete(id)
   }
-  async bubble(name, data) {
-    let inboundList = Object.keys(this.inbounds)
-    for (let i = 0; i < inboundList.length; i++) {
-      let id = inboundList[i]
-      this.inbounds[id].dispatch({ name, data })
-    }
-  }
-  register({ name, id, port }) {
-    if (Object.keys(this.processers[name] || {}).includes(id)) {
-      return 'arc'
-    }
-    if (!this.ability[name]) {
-      this.ability[name] = { processers: new Set(), ports: {} }
-    }
-    if (!this.ability[name].ports[port.id]) {
-      this.ability[name].ports[port.id] = new Set()
-    }
-
-    if (!this.ability[name].processers.has(id)) {
-      this.ability[name].processers.add(id)
-      this.bubble('register', { name, id })
-    }
-    this.ability[name].ports[port.id].add(id)
-  }
-  processer({ name, processer, id = uuid(), route = [] }) {
-    this.log('Register', name, id)
-    if (!this.processers[name]) {
-      this.processers[name] = {}
-    }
-    this.processers[name][id] = processer
-    return this.bubble('register', { name, id })
-  }
-  get registered() {
-    let processers = Object.keys(this.processers)
-      .map(name => ({ name, ids: Object.keys(this.processers[name]) }))
-      .map(({ name, ids }) => ids.map(id => ({ name, id })))
-    let abilities = Object.keys(this.ability)
-      .map(name => ({ name, ids: [...this.ability[name].processers] }))
-      .map(({ name, ids }) => ids.map(id => ({ name, id })))
-    return [].concat(...processers, ...abilities)
-  }
-}
-
-class Inbound {
-  constructor({ id, protocol, target, log, inboundId }, home) {
-    this.id = id
-    this.protocol = protocol
-    this.target = target
-    this.online = false
-    this.log = log
-    this.pendingDispatch = []
-    this.home = home
-    if (protocol === 'ws') {
-      let socket = Client(target)
-      this.socket = socket
-      socket.on('connect', () => {
-        log('Inbound Connect', id)
-        this.login()
+  choice() {
+    const waitList = this.busy
+      .map(id => this.nodes.get(id))
+      .sort(({ time: a }, { time: b }) => a - b)
+      .map((node, index) => {
+        const { resolve, reject } = node
+        return { ...node, p: pdf(index / this.busy.length) * (resolve + 1) / ((resolve + 1) + (reject + 1)) }
       })
-    }
-  }
-  emit(event, data) {
-    return new Promise(resolve => this.socket.emit(event, data, resolve))
-  }
-  dispatch({ name, data }) {
-    if (this.online) {
-      return this.emit(name, data)
-    } else {
-      this.pendingDispatch.push({ name, data })
-    }
-  }
-  async login() {
-    let message = await this.emit('authenticate', { id: this.home.id, registered: this.home.registered })
-    if (message === 'welcome') {
-      this.online = true
-      this.log('Inbound Online', this.id)
-      for (let i = 0; i < this.pendingDispatch.length; i++) {
-        this.dispatch(this.pendingDispatch[i])
+      .sort(({ p: a }, { p: b }) => b - a)
+    const pSum = waitList.reduce(({ p: a }, { p: b }) => ({ p: a + b }), { p: 0 }).p
+    let pFind = Math.random() * pSum
+    return waitList.find(({ p }) => {
+      pFind -= p
+      if (pFind <= 0) {
+        return true
       }
-      this.pendingDispatch = []
-    }
+    }).id
   }
-}
-
-class Port {
-  constructor({ target, protocol, id, log }, home) {
-    this.id = id
-    this.ability = {}
-    this.target = target
-    this.home = home
-    this.protocol = protocol
-    this.log = log
-    if (protocol === 'ws') {
-      let io = new Server(target, { serveClient: false })
-      this.io = io
-      io.on('connect', socket => this.authenticate(socket))
+  async dispatch(task, id) {
+    let node = this.nodes.get(id)
+    this.nodes.set(id, { ...node, time: Date.now() })
+    const result = await node.processer(task)
+    const valid = await this.validator(result)
+    if (!valid) {
+      throw new Error('invalid')
     }
+    node = this.nodes.get(id)
+    this.nodes.set(id, { ...node, resolve: node.resolve + 1 })
+    return result
   }
-  async authenticate(socket) {
-    let [authenticate, arc] = await once(socket, 'authenticate')
-    if (typeof arc !== 'function') {
-      arc = () => {}
+  async action(task, fails = []) {
+    if (fails.length > 5) {
+      throw fails
     }
-    let outboundId = uuid()
-    let { id, registered } = authenticate
-    let outbound = new Outbound({ protocol: this.protocol, socket, log: this.log, home: id, id: outboundId, registered }, this)
-    this.home.outbounds[outboundId] = outbound
-    for (let i = 0; i < registered.length; i++) {
-      this.register({ name: registered[i].name, id: registered[i].id, outbound })
-    }
-    arc('welcome')
-    this.log('Outbound Online', outboundId, 'from', this.id)
-  }
-  register({ name, id, outbound }) {
-    if (!this.ability[name]) {
-      this.ability[name] = { processers: new Set(), outbounds: {} }
-    }
-    if (!this.ability[name].outbounds[outbound.id]) {
-      this.ability[name].outbounds[outbound.id] = new Set()
-    }
-
-    if (!this.ability[name].processers.has(id)) {
-      this.ability[name].processers.add(id)
-      this.home.register({ name, id, port: this })
-    }
-    this.ability[name].outbounds[outbound.id].add(id)
-  }
-}
-
-class Outbound {
-  constructor({ protocol, socket, log, id, home }, port) {
-    this.protocol = protocol
-    this.socket = socket
-    this.port = port
-    this.log = log
-    this.id = id
-    this.home = home
-    this.handler(socket)
-  }
-  handler(socket) {
-    socket.on('register', ({ name, id }) => {
-      this.port.register({ name, id, outbound: this })
+    const id = this.choice()
+    const result = await this.dispatch(task, id).catch(e => {
+      const node = this.nodes.get(id)
+      this.nodes.set(id, { ...node, reject: node.reject + 1 })
+      return this.act(task, [...fails, e])
     })
+    return result
   }
 }
 
