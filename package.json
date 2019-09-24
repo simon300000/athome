@@ -8,7 +8,7 @@
     "test": "rm test/test.d.ts; npm run unit",
     "unit": "nyc mocha --reporter=landing -r ts-node/register test/*.ts",
     "tsc": "tsc",
-    "coverage": "nyc report --reporter=text-lcov | coveralls"
+    "coverage": "mkdir coverage; nyc report --reporter=text-lcov >> ./coverage/lcov.info"
   },
   "repository": {
     "type": "git",
