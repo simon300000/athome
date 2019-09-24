@@ -1,6 +1,6 @@
 {
   "name": "athome",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Task Distribution",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
