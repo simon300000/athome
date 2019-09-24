@@ -72,10 +72,10 @@ export = class AtHome {
   id: string
   homes: Map<string, Home>
   power: number
-  private validator: (result: any) => Promise<Boolean>
+  private validator: (result?: any) => Boolean | Promise<Boolean>
   private pulls: Array<Pull>
   private pending: Array<Task>
-  constructor({ id = uuid(), validator = async () => true } = {}) {
+  constructor({ id = uuid(), validator = (result?: any): boolean | Promise<boolean> => true } = {}) {
     this.id = id
     this.homes = new Map()
     // this.busy = []
@@ -84,13 +84,13 @@ export = class AtHome {
     this.pulls = []
     this.pending = []
   }
-  join(processer: Function, { id = uuid(), power = 1 } = {}) {
+  join = (processer: Function, { id = uuid(), power = 1 } = {}) => {
     this.homes.set(id, new Home({ processer, id, power }))
     // this.busy.push(...Array(power).fill(id))
     this.power += power
     return id
   }
-  quit(id: string) {
+  quit = (id: string) => {
     const { power, jobs } = this.homes.get(id)
     // this.busy = this.busy.filter(node => node !== id)
     this.pulls = this.pulls.filter((pull) => {
@@ -104,7 +104,7 @@ export = class AtHome {
     this.power -= power
     this.homes.delete(id)
   }
-  private async transmit(id: string, job: Job) {
+  private transmit = async (id: string, job: Job) => {
     const home = this.homes.get(id)
     if (!home) {
       throw new Error('unknow home')
@@ -120,7 +120,7 @@ export = class AtHome {
     //   this.nodes.set(id, { ...node, resolve: node.resolve + 1 })
     return result
   }
-  private dispatch(id: string, task: Task) {
+  private dispatch = async (id: string, task: Task) => {
     const job = new Job(id, task)
     this.transmit(id, job).then(job.resolve).catch(job.reject)
     job.promise
@@ -147,7 +147,7 @@ export = class AtHome {
         }
       })
   }
-  execute(data: any): Promise<any> {
+  execute = (data?: any): Promise<any> => {
     const task = new Task(data)
     if (this.pulls.length) {
       const pull = this.pulls.shift()
@@ -158,7 +158,7 @@ export = class AtHome {
       return task.promise
     }
   }
-  pull(id: string): Promise<any> {
+  pull = (id: string): Promise<any> => {
     if (this.homes.has(id)) {
       const pull = new Pull(id)
       if (this.pending.length) {

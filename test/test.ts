@@ -1,8 +1,9 @@
 /* global describe context it */
+import { rejects } from 'assert'
 import { assert } from 'chai'
 import AtHome = require('..')
 
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const wait = (ms: number, result?: any) => new Promise(resolve => setTimeout(resolve, ms, result))
 
 describe('@Home', function () {
   context('Class AtHome', function () {
@@ -94,14 +95,52 @@ describe('@Home', function () {
         home.pull(id)
         return assert.equal(await result, 233)
       })
+      it('some combinations', async function () {
+        this.timeout(1000 * 50)
+        const { execute, pull, join } = new AtHome()
+        const time = Date.now()
+        const workers = Array(10).fill(undefined).map(() => join((n: number) => wait(1000, n + 1)))
+        const jobs = []
+        jobs.push(...Array(5).fill(undefined).map(() => execute(20)))
+        workers.forEach(pull)
+        jobs.push(...Array(20).fill(undefined).map(() => execute(20)))
+        workers.forEach(pull)
+        jobs.push(...Array(5).fill(undefined).map(() => execute(20)))
+        workers.forEach(pull)
+        workers.forEach(pull)
+        await Promise.all(jobs)
+        jobs.push(...Array(5).fill(undefined).map(() => execute(20)))
+        await Promise.all(jobs)
+        const timeEnd = Date.now()
+        assert.deepStrictEqual(await Promise.all(jobs), Array(35).fill(21))
+        return assert.isBelow(timeEnd - time, 1000 * 2.5)
+      })
+      it('fall retries', async function () {
+        const { execute, pull, join } = new AtHome({ validator: (n: number) => n > 20 })
+        pull(join(() => 10))
+        pull(join(() => 21))
+        return assert.strictEqual(await execute(), 21)
+      })
+      it('fall retries again', async function () {
+        const { execute, pull, join } = new AtHome({ validator: (n: number) => n > 20 })
+        const id = join(() => 0)
+        pull(join(() => 0))
+        pull(join(() => 10))
+        pull(id)
+        pull(id)
+        pull(join(() => 21))
+        return assert.strictEqual(await execute(), 21)
+      })
+      it('fall retries > 5 throw', async function () {
+        const { execute, pull, join } = new AtHome({ validator: (n: number) => n > 20 })
+        pull(join(() => 10))
+        pull(join(() => 10))
+        pull(join(() => 10))
+        pull(join(() => 10))
+        pull(join(() => 10))
+        pull(join(() => 10))
+        return rejects(execute())
+      })
     })
   })
-  // context('Action', function() {
-  // it('compute', async function() {
-  //   let number = 42
-  //   const home = new AtHome()
-  //   home.join(n => n + 1)
-  //   return assert.strictEqual(await home.action(number), number + 1)
-  // })
-  // })
 })
