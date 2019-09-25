@@ -1,5 +1,8 @@
 const uuidv4 = require('uuid/v4')
+interface HomeID extends String { }
+
 const uuid = () => String(uuidv4())
+const homeID = (): HomeID => uuid()
 
 class Task {
   data: any[]
@@ -20,12 +23,12 @@ class Task {
 }
 
 class Job {
-  id: string
+  id: HomeID
   task: Task
   resolve: (result: any) => void
   reject: (error: Error) => void
   promise: Promise<any>
-  constructor(id: string, task: Task) {
+  constructor(id: HomeID, task: Task) {
     this.id = id
     this.task = task
     this.promise = new Promise((resolve, reject) => {
@@ -36,14 +39,14 @@ class Job {
 }
 
 class Home {
-  id: string
+  id: HomeID
   processer: (...data: any[]) => any
   resolves: number
   rejects: number
   power: number
   // time: number
   jobs: Set<Job>
-  constructor({ processer, id, power }: { id: string, processer: (...data: any[]) => any, power: number }) {
+  constructor({ processer, id, power }: { id: HomeID, processer: (...data: any[]) => any, power: number }) {
     this.id = id
     this.processer = processer
     this.resolves = 0
@@ -55,10 +58,10 @@ class Home {
 }
 
 class Pull {
-  id: string
+  id: HomeID
   promise: Promise<Task>
   resolve: (task: Task) => void
-  constructor(id: string) {
+  constructor(id: HomeID) {
     this.id = id
     this.promise = new Promise(resolve => {
       this.resolve = resolve
@@ -67,15 +70,13 @@ class Pull {
 }
 
 export = class AtHome {
-  id: string
-  homes: Map<string, Home>
+  homes: Map<HomeID, Home>
   power: number
   private validator: (result?: any) => Boolean | Promise<Boolean>
   pulls: Array<Pull>
   pending: Array<Task>
   private retries: number
-  constructor({ id = uuid(), validator = (result?: any): boolean | Promise<boolean> => true, retries = 5 } = {}) {
-    this.id = id
+  constructor({ validator = (result?: any): boolean | Promise<boolean> => true, retries = 5 } = {}) {
     this.homes = new Map()
     // this.busy = []
     this.power = 0
@@ -84,13 +85,13 @@ export = class AtHome {
     this.pending = []
     this.retries = retries
   }
-  join = (processer: (...data: any[]) => any, { id = uuid(), power = 1 } = {}) => {
+  join = (processer: (...data: any[]) => any, { id = homeID(), power = 1 } = {}) => {
     this.homes.set(id, new Home({ processer, id, power }))
     // this.busy.push(...Array(power).fill(id))
     this.power += power
     return id
   }
-  quit = (id: string) => {
+  quit = (id: HomeID) => {
     const { power, jobs } = this.homes.get(id)
     // this.busy = this.busy.filter(node => node !== id)
     this.pulls = this.pulls.filter(pull => pull.id !== id)
@@ -98,7 +99,7 @@ export = class AtHome {
     this.power -= power
     this.homes.delete(id)
   }
-  private transmit = async (id: string, job: Job) => {
+  private transmit = async (id: HomeID, job: Job) => {
     const home = this.homes.get(id)
     if (!home) {
       throw new Error('unknow home')
@@ -112,7 +113,7 @@ export = class AtHome {
     }
     return result
   }
-  private dispatch = async (id: string, task: Task) => {
+  private dispatch = async (id: HomeID, task: Task) => {
     const home = this.homes.get(id)
     const job = new Job(id, task)
     this.transmit(id, job).then(job.resolve).catch(job.reject)
@@ -157,7 +158,7 @@ export = class AtHome {
       return task.promise
     }
   }
-  pull = (id: string): Promise<any> => {
+  pull = (id: HomeID): Promise<any> => {
     if (this.homes.has(id)) {
       const pull = new Pull(id)
       if (this.pending.length) {

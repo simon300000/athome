@@ -14,11 +14,6 @@ describe('@Home', function () {
       const home = new AtHome()
       return assert.isObject(home)
     })
-    it('preset id', function () {
-      const random = String(Math.random())
-      const home = new AtHome({ id: random })
-      return assert.strictEqual(home.id, random)
-    })
   })
   context('Nodes', function () {
     context('join', function () {
