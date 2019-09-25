@@ -38,16 +38,16 @@ class Job {
 class Home {
   id: string
   processer: (...data: any[]) => any
-  resolve: number
-  reject: number
+  resolves: number
+  rejects: number
   power: number
   // time: number
   jobs: Set<Job>
   constructor({ processer, id, power }: { id: string, processer: (...data: any[]) => any, power: number }) {
     this.id = id
     this.processer = processer
-    this.resolve = 0
-    this.reject = 0
+    this.resolves = 0
+    this.rejects = 0
     this.power = power
     // this.time = Date.now()
     this.jobs = new Set()
@@ -110,18 +110,23 @@ export = class AtHome {
     if (!valid) {
       throw new Error('invalid')
     }
-    //   node = this.nodes.get(id)
-    //   this.nodes.set(id, { ...node, resolve: node.resolve + 1 })
     return result
   }
   private dispatch = async (id: string, task: Task) => {
+    const home = this.homes.get(id)
     const job = new Job(id, task)
     this.transmit(id, job).then(job.resolve).catch(job.reject)
     job.promise
       .then(result => {
+        if (home) {
+          home.resolves++
+        }
         task.resolve(result)
       })
       .catch((e: Error) => {
+        if (home) {
+          home.rejects++
+        }
         task.falls.push(e)
         if (task.falls.length >= this.retries) {
           task.reject(new Error(task.falls.map(({ message }) => message).join(', ')))

@@ -73,7 +73,7 @@ describe('@Home', function () {
         const result = home.execute(undefined).catch((e: Error) => e)
         for (let index = 0; index < 6; index++) {
           id = home.join(() => new Promise(() => { }))
-          home.pull(id).catch(() => { })
+          home.pull(id)
           home.quit(id)
           await wait(1)
         }
@@ -142,7 +142,6 @@ describe('@Home', function () {
       })
       it('define fall retries limit', async function () {
         const { execute, pull, join } = new AtHome({ validator: (n: number) => n > 20, retries: 10 })
-        const id = join(() => 10)
         pull(join(() => 10))
         pull(join(() => 10))
         pull(join(() => 10))
@@ -170,6 +169,38 @@ describe('@Home', function () {
       it('reject unknow pull', async function () {
         const { pull } = new AtHome({ validator: (n: number) => n > 20 })
         return rejects(pull('233'))
+      })
+    })
+    context('Statistics', function () {
+      it('home resolves++', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20 })
+        const id = home.join(() => 21)
+        home.pull(id)
+        home.pull(id)
+        await home.execute()
+        await home.execute()
+        return assert.strictEqual(home.homes.get(id).resolves, 2)
+      })
+      it('home rejects++', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20 })
+        const id = home.join(() => 19)
+        home.pull(id)
+        home.pull(id)
+        home.pull(home.join(() => 21))
+        await home.execute()
+        return assert.strictEqual(home.homes.get(id).rejects, 2)
+      })
+      it('combination', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20 })
+        const id = home.join(n => n + 19)
+        home.pull(id)
+        home.pull(id)
+        home.pull(id)
+        home.pull(home.join(() => 21))
+        await home.execute(2)
+        await home.execute(0)
+        assert.strictEqual(home.homes.get(id).resolves, 1)
+        return assert.strictEqual(home.homes.get(id).rejects, 2)
       })
     })
   })
