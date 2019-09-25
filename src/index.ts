@@ -2,13 +2,13 @@ const uuidv4 = require('uuid/v4')
 const uuid = () => String(uuidv4())
 
 class Task {
-  data: any
+  data: any[]
   id: string
   promise: Promise<any>
   resolve: (result: any) => void
   reject: (error: Error) => void
   falls: Array<Error>
-  constructor(data: any, falls: Array<Error> = []) {
+  constructor({ data, falls = [] }: { data: any[], falls?: Array<Error> }) {
     this.falls = falls
     this.data = data
     this.id = uuid()
@@ -37,13 +37,13 @@ class Job {
 
 class Home {
   id: string
-  processer: Function
+  processer: (...data: any[]) => any
   resolve: number
   reject: number
   power: number
   // time: number
   jobs: Set<Job>
-  constructor({ processer, id, power }: { id: string, processer: Function, power: number }) {
+  constructor({ processer, id, power }: { id: string, processer: (...data: any[]) => any, power: number }) {
     this.id = id
     this.processer = processer
     this.resolve = 0
@@ -84,7 +84,7 @@ export = class AtHome {
     this.pulls = []
     this.pending = []
   }
-  join = (processer: Function, { id = uuid(), power = 1 } = {}) => {
+  join = (processer: (...data: any[]) => any, { id = uuid(), power = 1 } = {}) => {
     this.homes.set(id, new Home({ processer, id, power }))
     // this.busy.push(...Array(power).fill(id))
     this.power += power
@@ -110,7 +110,7 @@ export = class AtHome {
       throw new Error('unknow home')
     }
     home.jobs.add(job)
-    const result = await home.processer(job.task.data)
+    const result = await home.processer(...job.task.data)
     //   this.nodes.set(id, { ...node, time: Date.now() })
     const valid = await this.validator(result)
     if (!valid) {
@@ -147,8 +147,8 @@ export = class AtHome {
         }
       })
   }
-  execute = (data?: any): Promise<any> => {
-    const task = new Task(data)
+  execute = (...data: any[]): Promise<any> => {
+    const task = new Task({ data })
     if (this.pulls.length) {
       const pull = this.pulls.shift()
       pull.resolve(task)

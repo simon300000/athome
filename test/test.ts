@@ -141,6 +141,11 @@ describe('@Home', function () {
         pull(join(() => 10))
         return rejects(execute())
       })
+      it('excute with mutiple param', async function () {
+        const { execute, pull, join } = new AtHome()
+        pull(join((a, b) => a + b))
+        return assert.strictEqual(await execute(6, 7), 6 + 7)
+      })
     })
   })
 })
