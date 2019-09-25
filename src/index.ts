@@ -71,9 +71,10 @@ export = class AtHome {
   homes: Map<string, Home>
   power: number
   private validator: (result?: any) => Boolean | Promise<Boolean>
-  private pulls: Array<Pull>
-  private pending: Array<Task>
-  constructor({ id = uuid(), validator = (result?: any): boolean | Promise<boolean> => true } = {}) {
+  pulls: Array<Pull>
+  pending: Array<Task>
+  private retries: number
+  constructor({ id = uuid(), validator = (result?: any): boolean | Promise<boolean> => true, retries = 5 } = {}) {
     this.id = id
     this.homes = new Map()
     // this.busy = []
@@ -81,6 +82,7 @@ export = class AtHome {
     this.validator = validator
     this.pulls = []
     this.pending = []
+    this.retries = retries
   }
   join = (processer: (...data: any[]) => any, { id = uuid(), power = 1 } = {}) => {
     this.homes.set(id, new Home({ processer, id, power }))
@@ -121,7 +123,7 @@ export = class AtHome {
       })
       .catch((e: Error) => {
         task.falls.push(e)
-        if (task.falls.length > 5) {
+        if (task.falls.length >= this.retries) {
           task.reject(new Error(task.falls.map(({ message }) => message).join(', ')))
         } else {
           if (this.pulls.length) {
