@@ -146,6 +146,17 @@ describe('@Home', function () {
         pull(join((a, b) => a + b))
         return assert.strictEqual(await execute(6, 7), 6 + 7)
       })
+      it('fall pull retries', async function () {
+        const { execute, pull, join } = new AtHome({ validator: (n: number) => n > 20 })
+        pull(join(() => 10))
+        const result = execute()
+        pull(join(() => 21))
+        return assert.strictEqual(await result, 21)
+      })
+      it('reject unknow pull', async function () {
+        const { pull } = new AtHome({ validator: (n: number) => n > 20 })
+        return rejects(pull('233'))
+      })
     })
   })
 })
