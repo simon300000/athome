@@ -119,9 +119,7 @@ export = class AtHome {
     this.transmit(id, job).then(job.resolve).catch(job.reject)
     job.promise
       .then(result => {
-        if (home) {
-          home.resolves++
-        }
+        home.resolves++
         task.resolve(result)
       })
       .catch((e: Error) => {
