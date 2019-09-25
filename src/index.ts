@@ -58,12 +58,10 @@ class Pull {
   id: string
   promise: Promise<Task>
   resolve: (task: Task) => void
-  reject: (error: Error) => void
   constructor(id: string) {
     this.id = id
-    this.promise = new Promise((resolve, reject) => {
+    this.promise = new Promise(resolve => {
       this.resolve = resolve
-      this.reject = reject
     })
   }
 }
@@ -93,13 +91,7 @@ export = class AtHome {
   quit = (id: string) => {
     const { power, jobs } = this.homes.get(id)
     // this.busy = this.busy.filter(node => node !== id)
-    this.pulls = this.pulls.filter((pull) => {
-      if (pull.id === id) {
-        pull.reject(new Error('quit'))
-        return false
-      }
-      return true
-    })
+    this.pulls = this.pulls.filter(pull => pull.id !== id)
     jobs.forEach(({ reject }) => reject(new Error('quit')))
     this.power -= power
     this.homes.delete(id)
