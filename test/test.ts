@@ -165,6 +165,14 @@ describe('@Home', function () {
         const { pull } = new AtHome({ validator: (n: number) => n > 20 })
         return rejects(pull('233'))
       })
+      it('quit after execute', async function () {
+        const { pull, join, execute, quit } = new AtHome({ validator: (n: number) => n > 20 })
+        const id = join(() => 23)
+        pull(id)
+        const result = await execute()
+        quit(id)
+        return assert.strictEqual(result, 23)
+      })
     })
     context('Statistics', function () {
       it('home resolves++', async function () {
