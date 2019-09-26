@@ -225,6 +225,38 @@ describe('@Home', function () {
         await home.execute()
         return assert.strictEqual(home.homes.get(id).rejects, 2)
       })
+      it('update lastSeen at join', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20 })
+        const now = Date.now()
+        const id = home.join(n => new Promise(resolve => resolve(n + 2)))
+        return assert.isAtLeast(home.homes.get(id).lastSeen, now)
+      })
+      it('update lastSeen at pull', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20 })
+        const id = home.join(n => new Promise(resolve => resolve(n + 2)))
+        const now = home.homes.get(id).lastSeen
+        await wait(20)
+        home.pull(id)
+        return assert.isAbove(home.homes.get(id).lastSeen, now)
+      })
+      it('update lastSeen after execute', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20 })
+        const id = home.join(n => new Promise(resolve => resolve(n + 2)))
+        home.pull(id)
+        const now = home.homes.get(id).lastSeen
+        await wait(20)
+        await home.execute(19)
+        return assert.isAbove(home.homes.get(id).lastSeen, now)
+      })
+      it('update lastSeen after execute falls', async function () {
+        const home = new AtHome({ validator: (n: number) => n > 20, retries: 0 })
+        const id = home.join(n => new Promise(resolve => resolve(n + 2)))
+        home.pull(id)
+        const now = home.homes.get(id).lastSeen
+        await wait(20)
+        await home.execute(17).catch(() => { })
+        return assert.isAbove(home.homes.get(id).lastSeen, now)
+      })
     })
   })
 })

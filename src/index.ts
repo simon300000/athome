@@ -44,7 +44,7 @@ class Home {
   resolves: number
   rejects: number
   power: number
-  // time: number
+  lastSeen: number
   jobs: Set<Job>
   constructor({ processer, id, power }: { id: HomeID, processer: (...data: any[]) => any, power: number }) {
     this.id = id
@@ -78,7 +78,6 @@ export = class AtHome {
   private retries: number
   constructor({ validator = (result?: any): boolean | Promise<boolean> => true, retries = 5 } = {}) {
     this.homes = new Map()
-    // this.busy = []
     this.power = 0
     this.validator = validator
     this.pulls = []
@@ -87,7 +86,7 @@ export = class AtHome {
   }
   join = (processer: (...data: any[]) => any, { id = homeID(), power = 1 } = {}) => {
     this.homes.set(id, new Home({ processer, id, power }))
-    // this.busy.push(...Array(power).fill(id))
+    this.homes.get(id).lastSeen = Date.now()
     this.power += power
     return id
   }
@@ -106,7 +105,7 @@ export = class AtHome {
     }
     home.jobs.add(job)
     const result = await home.processer(...job.task.data)
-    //   this.nodes.set(id, { ...node, time: Date.now() })
+    this.homes.get(id).lastSeen = Date.now()
     const valid = await this.validator(result)
     if (!valid) {
       throw new Error('invalid')
@@ -159,6 +158,7 @@ export = class AtHome {
   pull = (id: HomeID): Promise<any> => {
     if (this.homes.has(id)) {
       const pull = new Pull(id)
+      this.homes.get(id).lastSeen = Date.now()
       if (this.pending.length) {
         const task = this.pending.shift()
         pull.resolve(task)
@@ -170,34 +170,4 @@ export = class AtHome {
       return Promise.reject(new Error('unknow node'))
     }
   }
-  // choice() {
-  //   const waitList = this.busy
-  //     .map(id => this.nodes.get(id))
-  //     .sort(({ time: a }, { time: b }) => a - b)
-  //     .map((node, index) => {
-  //       const { resolve, reject } = node
-  //       return { ...node, p: pdf(index / this.busy.length) * (resolve + 1) / ((resolve + 1) + (reject + 1)) }
-  //     })
-  //     .sort(({ p: a }, { p: b }) => b - a)
-  //   const pSum = waitList.reduce(({ p: a }, { p: b }) => ({ p: a + b }), { p: 0 }).p
-  //   let pFind = Math.random() * pSum
-  //   return waitList.find(({ p }) => {
-  //     pFind -= p
-  //     if (pFind <= 0) {
-  //       return true
-  //     }
-  //   }).id
-  // }
-  // async action(task, fails = []) {
-  //   if (fails.length > 5) {
-  //     throw fails
-  //   }
-  //   const id = this.choice()
-  //   const result = await this.dispatch(task, id).catch(e => {
-  //     const node = this.nodes.get(id)
-  //     this.nodes.set(id, { ...node, reject: node.reject + 1 })
-  //     return this.act(task, [...fails, e])
-  //   })
-  //   return result
-  // }
 }
