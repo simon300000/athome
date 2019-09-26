@@ -126,7 +126,7 @@ export = class AtHome {
           home.rejects++
         }
         task.falls.push(e)
-        if (task.falls.length >= this.retries) {
+        if (task.falls.length > this.retries) {
           task.reject(new Error(task.falls.map(({ message }) => message).join(', ')))
         } else {
           if (this.pulls.length) {
