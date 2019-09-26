@@ -7,7 +7,7 @@
 * Task pulling
 * Result validation
 * Error retries
-* Simple status
+* Built in status
 
 ## Install
 
@@ -18,55 +18,55 @@ npm install athome -S
 ## Usage
 
 ```javascript
-const AtHome = require('.')
-const home = new AtHome()
+const AtHome = require('athome')
+const atHome = new AtHome()
 
-const clusterId = home.join((n, m) => n + m)
-home.pull(clusterId)
+const clusterId = atHome.join((n, m) => n + m)
+atHome.pull(clusterId)
 // Since there is no tasks, this pull will be added to pulls waiting list.
 
-home.execute(3, 4)
+atHome.execute(3, 4)
   .then(console.log) // => 7
 ```
 
 More realistic use case:
 
 ```javascript
-const AtHome = require('.')
-const home = new AtHome()
+const AtHome = require('athome')
+const atHome = new AtHome()
 
 const functionTakesLongLongTimeRunsFarFarAway = n => new Promise(resolve => setTimeout(() => resolve(n * n), 1000))
 
-const clusterId = home.join(functionTakesLongLongTimeRunsFarFarAway)
+const clusterId = atHome.join(functionTakesLongLongTimeRunsFarFarAway)
 
-home.execute(8).then(console.log)
+atHome.execute(8).then(console.log)
 // Since there is no pulls, the task will be added to waiting list
 
-home.pull(clusterId)
+atHome.pull(clusterId)
 // A second later, output 64
 ```
 
 With built in validator:
 
 ```javascript
-const AtHome = require('.')
+const AtHome = require('athome')
 
-const home = new AtHome({ validator: result => result > 0 })
+const atHome = new AtHome({ validator: result => result > 0 })
 // result must be greater than 0
 
 const reverse = n => new Promise(resolve => setTimeout(() => resolve(-n), 1000))
 const stay = n => new Promise(resolve => setTimeout(() => resolve(n), 1000))
 
-const reverseId = home.join(reverse)
-const stayId = home.join(stay)
+const reverseId = atHome.join(reverse)
+const stayId = atHome.join(stay)
 
-home.pull(reverseId)
-home.pull(reverseId)
-home.pull(stayId)
+atHome.pull(reverseId)
+atHome.pull(reverseId)
+atHome.pull(stayId)
 
 
-home.execute(-3).then(console.log)
-home.execute(2).then(console.log)
+atHome.execute(-3).then(console.log)
+atHome.execute(2).then(console.log)
 
 // First -3 will go throw 1st reverse pull and output 3,
 // the second 2 will go throw 2nd reverse pull and output -2,
@@ -79,26 +79,28 @@ home.execute(2).then(console.log)
 
 ### new Athome(options)
 
+return atHome instance.
+
 | Options   | Type                        | Detail                             | Default      |
 | --------- | --------------------------- | ---------------------------------- | ------------ |
 | validator | Function => Promise/Boolean | A function used to validate result | `() => true` |
 | retries   | Number                      | Max retries limit                  | `5`          |
 
-### home.join(clusterFunction)
+#### atHome.join(clusterFunction)
 
 Add a cluster to @Home network.
 
 `clusterFunction`: function will be called with all params when this cluster is executing task.
 
-##### return: `String` cluster uuid
+##### return: `String` HomeID, cluster uuid
 
-### home.pull(id)
+#### atHome.pull(id)
 
 Pull task for this cluster, the correspond `clusterFunction` will be called when there is task available.
 
 `id`: clutser's uuid
 
-### home.execute(...params)
+#### atHome.execute(...params)
 
 Execute a task.
 
@@ -108,7 +110,7 @@ The task will be either executed now if there is waiting pulls, or added to task
 
 ##### return: `Promise` resolve the result, or reject when retries too much.
 
-### home.quit(id)
+#### atHome.quit(id)
 
 Remove a cluster from @Home network, this will also:
 
@@ -119,8 +121,30 @@ Remove a cluster from @Home network, this will also:
 
 `id`: cluster's uuid
 
+#### atHome.homes: `Map<HomeID, Home>`
+
+Map with HomeID(uuid) and Home Instances.
+
+### Home Instance
+
+#### home.id `HomeID(uuid)`
+
+#### home.resolves `number`
+
+Number of resolves.
+
+#### home.rejects `number`
+
+Number of rejects, include invalid response.
+
+#### home.lastSeen `number`
+
+Time stamp, refresh when:
+
+* join
+* pull
+* finish task
+
 ## Contribution
 
-Feel free to ask any question and create pull request.
-
-But be sure to make the unit test.
+Feel free to ask any question and create pull request :D
