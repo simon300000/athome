@@ -117,7 +117,7 @@ Remove a cluster from @Home network, this will also:
   * which will then be handled by a different cluster;
   * (or reject task if the task reachs retries limit).
 
-id`: cluster's uuid
+`id`: cluster's uuid
 
 ## Contribution
 
