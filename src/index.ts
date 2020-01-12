@@ -1,4 +1,4 @@
-const uuidv4 = require('uuid/v4')
+import uuidv4 from 'uuid/v4'
 interface HomeID extends String { }
 
 const uuid = () => String(uuidv4())
