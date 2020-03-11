@@ -100,6 +100,8 @@ Pull task for this cluster, the correspond `clusterFunction` will be called when
 
 `id`: clutser's uuid
 
+**return: `Promise<boolean>` if this compute succeed**
+
 #### atHome.execute(data)
 
 Execute a task.

@@ -117,10 +117,11 @@ export = class AtHome<Input, Output> {
     this.transmit(id, job)
       .then(job.resolve)
       .catch(job.reject)
-    job.promise
+    return job.promise
       .then(result => {
         home.resolves++
         task.resolve(result)
+        return true
       })
       .catch((e: Error) => {
         if (home) {
@@ -137,6 +138,7 @@ export = class AtHome<Input, Output> {
             this.pending.unshift(task)
           }
         }
+        return false
       })
       .finally(() => {
         if (home) {
