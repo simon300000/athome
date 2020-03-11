@@ -2,8 +2,8 @@
   "name": "athome",
   "version": "0.3.0",
   "description": "Task Distribution",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "index.js",
+  "types": "ndex.d.ts",
   "scripts": {
     "test": "npm run clear; npm run unit",
     "unit": "nyc mocha --reporter=landing -r ts-node/register test/*.ts",
