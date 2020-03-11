@@ -28,32 +28,11 @@ describe('@Home', function () {
         const id = home.join(() => 233, { id: random })
         return assert.strictEqual(id, random)
       })
-      it('power', function () {
-        const home = new AtHome()
-        home.join(() => 233)
-        return assert.strictEqual(home.power, 1)
-      })
-      it('preset power', function () {
-        const home = new AtHome()
-        home.join(() => 233, { power: 20 })
-        home.join(() => 233)
-        return assert.strictEqual(home.power, 21)
-      })
       it('list', function () {
         const home = new AtHome()
         home.join(() => 233)
         return assert.strictEqual(home.homes.size, 1)
       })
-      // it('busy', function() {
-      //   const home = new AtHome()
-      //   home.join(() => 233)
-      //   return assert.strictEqual(home.busy.length, 1)
-      // })
-      // it('busy with power', function() {
-      //   const home = new AtHome()
-      //   home.join(() => 233, { power: 20 })
-      //   return assert.strictEqual(home.busy.length, 20)
-      // })
     })
     context('quit', function () {
       it('quit', function () {

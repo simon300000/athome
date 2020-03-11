@@ -43,16 +43,13 @@ class Home {
   processer: (...data: any[]) => any
   resolves: number
   rejects: number
-  power: number
   lastSeen: number
   jobs: Set<Job>
-  constructor({ processer, id, power }: { id: HomeID, processer: (...data: any[]) => any, power: number }) {
+  constructor({ processer, id }: { id: HomeID, processer: (...data: any[]) => any }) {
     this.id = id
     this.processer = processer
     this.resolves = 0
     this.rejects = 0
-    this.power = power
-    // this.time = Date.now()
     this.jobs = new Set()
   }
 }
@@ -71,33 +68,32 @@ class Pull {
 
 export = class AtHome {
   homes: Map<HomeID, Home>
-  power: number
   private validator: (result?: any) => Boolean | Promise<Boolean>
   pulls: Array<Pull>
   pending: Array<Task>
   private retries: number
   constructor({ validator = (result?: any): boolean | Promise<boolean> => true, retries = 5 } = {}) {
     this.homes = new Map()
-    this.power = 0
     this.validator = validator
     this.pulls = []
     this.pending = []
     this.retries = retries
   }
-  join = (processer: (...data: any[]) => any, { id = homeID(), power = 1 } = {}) => {
-    this.homes.set(id, new Home({ processer, id, power }))
+
+  join = (processer: (...data: any[]) => any, { id = homeID() } = {}) => {
+    this.homes.set(id, new Home({ processer, id }))
     this.homes.get(id).lastSeen = Date.now()
-    this.power += power
     return id
   }
+
   quit = (id: HomeID) => {
-    const { power, jobs } = this.homes.get(id)
+    const { jobs } = this.homes.get(id)
     // this.busy = this.busy.filter(node => node !== id)
     this.pulls = this.pulls.filter(pull => pull.id !== id)
     jobs.forEach(({ reject }) => reject(new Error('quit')))
-    this.power -= power
     this.homes.delete(id)
   }
+
   private transmit = async (id: HomeID, job: Job) => {
     const home = this.homes.get(id)
     if (!home) {
@@ -112,6 +108,7 @@ export = class AtHome {
     }
     return result
   }
+
   private dispatch = async (id: HomeID, task: Task) => {
     const home = this.homes.get(id)
     const job = new Job(id, task)
@@ -144,6 +141,7 @@ export = class AtHome {
         }
       })
   }
+
   execute = (...data: any[]): Promise<any> => {
     const task = new Task({ data })
     if (this.pulls.length) {
@@ -155,6 +153,7 @@ export = class AtHome {
       return task.promise
     }
   }
+
   pull = (id: HomeID): Promise<any> => {
     if (this.homes.has(id)) {
       const pull = new Pull(id)
