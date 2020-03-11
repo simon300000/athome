@@ -1,7 +1,7 @@
 /* global describe context it */
 import { rejects } from 'assert'
 import { assert } from 'chai'
-import AtHome = require('..')
+import AtHome from '..'
 
 const wait = (ms: number, result?: any) => new Promise(resolve => setTimeout(resolve, ms, result))
 

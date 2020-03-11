@@ -68,7 +68,7 @@ class Pull<Input, Output> {
   }
 }
 
-export = class AtHome<Input, Output> {
+export class AtHome<Input, Output> {
   homes: Map<HomeID, Home<Input, Output>>
   private validator: (result: Output) => LikePromise<boolean>
   pulls: Array<Pull<Input, Output>>

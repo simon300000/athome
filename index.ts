@@ -1,2 +1,2 @@
-import AtHome from './src'
+import { AtHome } from './src'
 export = AtHome
