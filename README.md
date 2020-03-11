@@ -100,7 +100,7 @@ Pull task for this cluster, the correspond `clusterFunction` will be called when
 
 `id`: clutser's uuid
 
-#### atHome.execute(...params)
+#### atHome.execute(data)
 
 Execute a task.
 
