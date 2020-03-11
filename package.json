@@ -56,5 +56,7 @@
     "ts-node": "^8.4.1",
     "typescript": "^3.6.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "uuid": "^7.0.2"
+  }
 }
