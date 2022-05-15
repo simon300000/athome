@@ -70,7 +70,7 @@ atHome.execute(2).then(console.log)
 
 // First -3 will go throw 1st reverse pull and output 3,
 // the second 2 will go throw 2nd reverse pull and output -2,
-// which will falls the validation, so it will go again with the 3rd stay pull,
+// the validation will not pass, retry with the 3rd stay pull,
 // and output 2, which pass the validation.
 // output: 3, 2
 ```
