@@ -8,7 +8,7 @@
     "test": "npm run clear; npm run unit",
     "unit": "nyc mocha --reporter=landing -r ts-node/register test/*.ts",
     "clear": "rm index.js index.d.ts src/*.js src/*.d.ts test/*.d.ts test/*.js;exit 0",
-    "tsc": "tsc",
+    "tsc": "tsc -b",
     "coverage": "mkdir coverage; nyc report --reporter=text-lcov >> ./coverage/lcov.info"
   },
   "repository": {
