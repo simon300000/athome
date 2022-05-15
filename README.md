@@ -5,7 +5,6 @@
 #### Tiny and elegant Cluster state manager.
 
 * Task pulling
-* Result validation
 * Error retries
 * Built in status
 
@@ -21,11 +20,12 @@ npm install athome -S
 const AtHome = require('athome')
 const atHome = new AtHome()
 
-const clusterId = atHome.join((n, m) => n + m)
+const clusterId = atHome.join()
 atHome.pull(clusterId)
+  .then(({ resolve, data: [a, b] }) => resolve(a + b))
 // Since there is no tasks, this pull will be added to pulls waiting list.
 
-atHome.execute(3, 4)
+atHome.execute([3, 4])
   .then(console.log) // => 7
 ```
 
@@ -46,69 +46,37 @@ atHome.pull(clusterId)
 // A second later, output 64
 ```
 
-With built in validator:
-
-```javascript
-const AtHome = require('athome')
-
-const atHome = new AtHome({ validator: result => result > 0 })
-// result must be greater than 0
-
-const reverse = n => new Promise(resolve => setTimeout(() => resolve(-n), 1000))
-const stay = n => new Promise(resolve => setTimeout(() => resolve(n), 1000))
-
-const reverseId = atHome.join(reverse)
-const stayId = atHome.join(stay)
-
-atHome.pull(reverseId)
-atHome.pull(reverseId)
-atHome.pull(stayId)
-
-
-atHome.execute(-3).then(console.log)
-atHome.execute(2).then(console.log)
-
-// First -3 will go throw 1st reverse pull and output 3,
-// the second 2 will go throw 2nd reverse pull and output -2,
-// the validation will not pass, retry with the 3rd stay pull,
-// and output 2, which pass the validation.
-// output: 3, 2
-```
-
 ## API Document
 
 ### new Athome(options)
 
-return atHome instance.
+return atHome instance
 
-| Options   | Type                        | Detail                             | Default      |
-| --------- | --------------------------- | ---------------------------------- | ------------ |
-| validator | Function => Promise/Boolean | A function used to validate result | `() => true` |
-| retries   | Number                      | Max retries limit                  | `5`          |
+| Options | Type                        | Detail                             | Default      |
+| ------- | --------------------------- | ---------------------------------- | ------------ |
+| retries | Number                      | Max retries limit                  | `5`          |
 
-#### atHome.join(clusterFunction)
+#### atHome.join()
 
-Add a cluster to @Home network.
+Add a cluster to @Home network
 
-`clusterFunction`: function will be called with all params when this cluster is executing task.
-
-##### return: `String` HomeID, cluster uuid
+##### return: `String` HomeID, cluster id
 
 #### atHome.pull(id)
 
-Pull task for this cluster, the correspond `clusterFunction` will be called when there is task available.
+Pull task for this cluster
 
 `id`: clutser's uuid
 
-**return: `Promise<boolean>` if this compute succeed**
+**return: `Promise<{resolve, reject, data}>`**
 
 #### atHome.execute(data)
 
-Execute a task.
+Execute a task
 
 The task will be either executed now if there is waiting pulls, or added to task waiting list for pulls.
 
-`params`: params which pass to `clusterFunction`
+`data`: input for `pull()`
 
 ##### return: `Promise` resolve the result, or reject when retries too much.
 
@@ -146,7 +114,3 @@ Time stamp, refresh when:
 * join
 * pull
 * finish task
-
-## Contribution
-
-Feel free to ask any question and create pull request :D

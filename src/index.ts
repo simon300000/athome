@@ -28,28 +28,34 @@ class Job<Input, Output> {
   id: HomeID
   task: Task<Input, Output>
   resolve: (result: Output) => void
-  reject: (error: Error) => void
+  reject: (error?: Error | string) => void
   promise: Promise<Output>
   constructor(id: HomeID, task: Task<Input, Output>) {
     this.id = id
     this.task = task
     this.promise = new Promise((resolve, reject) => {
       this.resolve = resolve
-      this.reject = reject
+      this.reject = error => {
+        if (!error) {
+          reject(new Error())
+        } else if (typeof error === 'string') {
+          reject(new Error(error))
+        } else {
+          reject(error)
+        }
+      }
     })
   }
 }
 
 class Home<Input, Output> {
   id: HomeID
-  processer: (data: Input) => LikePromise<Output>
   resolves: number
   rejects: number
   lastSeen: number
   jobs: Set<Job<Input, Output>>
-  constructor({ processer, id }: { id: HomeID, processer: (data: Input) => LikePromise<Output> }) {
+  constructor({ id }: { id: HomeID }) {
     this.id = id
-    this.processer = processer
     this.resolves = 0
     this.rejects = 0
     this.jobs = new Set()
@@ -70,20 +76,18 @@ class Pull<Input, Output> {
 
 export class AtHome<Input, Output> {
   homes: Map<HomeID, Home<Input, Output>>
-  private validator: (result: Output) => LikePromise<boolean>
   pulls: Array<Pull<Input, Output>>
   pending: Array<Task<Input, Output>>
   private retries: number
-  constructor({ validator = (result: Output): LikePromise<boolean> => true, retries = 5 } = {}) {
+  constructor({ retries = 5 } = {}) {
     this.homes = new Map()
-    this.validator = validator
     this.pulls = []
     this.pending = []
     this.retries = retries
   }
 
-  join = (processer: (data: Input) => LikePromise<Output>, { id = homeID() } = {}) => {
-    this.homes.set(id, new Home({ processer, id }))
+  join = ({ id = homeID() } = {}) => {
+    this.homes.set(id, new Home({ id }))
     this.homes.get(id).lastSeen = Date.now()
     return id
   }
@@ -96,80 +100,64 @@ export class AtHome<Input, Output> {
     this.homes.delete(id)
   }
 
-  private transmit = async (id: HomeID, job: Job<Input, Output>) => {
-    const home = this.homes.get(id)
-    if (!home) {
-      throw new Error('unknow home')
-    }
-    home.jobs.add(job)
-    const result = await home.processer(job.task.data)
-    this.homes.get(id).lastSeen = Date.now()
-    const valid = await this.validator(result)
-    if (!valid) {
-      throw new Error('invalid')
-    }
-    return result
-  }
-
   private dispatch = (id: HomeID, task: Task<Input, Output>) => {
     const home = this.homes.get(id)
     const job = new Job(id, task)
-    this.transmit(id, job)
-      .then(job.resolve)
-      .catch(job.reject)
-    return job.promise
+    home.jobs.add(job)
+
+    job.promise
       .then(result => {
         home.resolves++
         task.resolve(result)
-        return true
       })
       .catch((e: Error) => {
-        if (home) {
-          home.rejects++
-        }
+        home.rejects++
         task.falls.push(e)
         if (task.falls.length > this.retries) {
           task.reject(new Error(task.falls.map(({ message }) => message).join(', ')))
         } else {
-          if (this.pulls.length) {
-            const pull = this.pulls.shift()
-            pull.resolve(task)
-          } else {
-            this.pending.unshift(task)
-          }
+          this.allocate(task, true)
         }
-        return false
       })
       .finally(() => {
-        if (home) {
-          home.jobs.delete(job)
-        }
+        home.jobs.delete(job)
+        home.lastSeen = Date.now()
       })
+
+    return { resolve: job.resolve, reject: job.reject, data: task.data }
   }
 
-  execute = (data: Input) => {
-    const task = new Task<Input, Output>(data)
+  private allocate = (task: Task<Input, Output>, unshift = false) => {
     if (this.pulls.length) {
       const pull = this.pulls.shift()
       pull.resolve(task)
       return task.promise
     } else {
-      this.pending.push(task)
+      if (unshift) {
+        this.pending.unshift(task)
+      } else {
+        this.pending.push(task)
+      }
       return task.promise
     }
   }
 
+  execute = (data: Input) => {
+    const task = new Task<Input, Output>(data)
+    return this.allocate(task)
+  }
+
   pull = (id: HomeID) => {
     if (this.homes.has(id)) {
-      const pull = new Pull<Input, Output>(id)
       this.homes.get(id).lastSeen = Date.now()
       if (this.pending.length) {
         const task = this.pending.shift()
-        pull.resolve(task)
+        return Promise.resolve(this.dispatch(id, task))
       } else {
+        const pull = new Pull<Input, Output>(id)
         this.pulls.push(pull)
+        return pull.promise.then(task => this.dispatch(pull.id, task))
       }
-      return pull.promise.then(task => this.dispatch(pull.id, task))
     } else {
       return Promise.reject(new Error('unknow node'))
     }
